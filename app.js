@@ -41,6 +41,21 @@ app.get('/log', (req, res) => {
   });
 });
 
+// Endpoint to get the latest 100 lines from requests.log
+app.get('/latest-logs', (req, res) => {
+  fs.readFile(logFilePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading log file:', err);
+      return res.status(500).send('Failed to read the log file');
+    }
+
+    const lines = data.split('\n'); // Do not trim the data to preserve newlines
+    const last100Lines = lines.slice(-100); // Get the last 100 lines
+    res.setHeader('Content-Type', 'text/plain'); // Ensure the response is plain text
+    res.send(last100Lines.join('\n'));
+  });
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
