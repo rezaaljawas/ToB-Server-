@@ -5,8 +5,12 @@ const path = require('path');
 const app = express();
 const PORT = 4001;
 
-// Define the log file path
+// Middleware to parse JSON requests
+app.use(express.json());
+
+// Define the log file paths
 const logFilePath = path.join(__dirname, 'requests.log');
+const temperatureLogFilePath = path.join(__dirname, 'temperature.log');
 
 // Function to get Jakarta timestamp
 const getJakartaTimestamp = () => {
@@ -52,6 +56,42 @@ app.get('/latest-logs', (req, res) => {
     const lines = data.split('\n'); // Do not trim the data to preserve newlines
     const last100Lines = lines.slice(-100); // Get the last 100 lines
     res.setHeader('Content-Type', 'text/plain'); // Ensure the response is plain text
+    res.send(last100Lines.join('\n'));
+  });
+});
+
+// Endpoint to receive temperature data and log it
+app.post('/temperature', (req, res) => {
+  const { temperature_inside, temperature_outside } = req.body;
+  if (temperature_inside === undefined || temperature_outside === undefined) {
+    return res.status(400).send('Invalid request: missing temperature data');
+  }
+
+  const timestamp = getJakartaTimestamp();
+  const logEntry = `${timestamp} - Inside: ${temperature_inside}C, Outside: ${temperature_outside}C\n`;
+
+  fs.appendFile(temperatureLogFilePath, logEntry, (err) => {
+    if (err) {
+      console.error('Error writing to temperature log file:', err);
+      return res.status(500).send('Failed to log the temperature data');
+    }
+
+    console.log('Temperature log entry added:', logEntry.trim());
+    res.send('Temperature data logged successfully!');
+  });
+});
+
+// Endpoint to get the latest 100 temperature logs
+app.get('/latest-temperature-logs', (req, res) => {
+  fs.readFile(temperatureLogFilePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading temperature log file:', err);
+      return res.status(500).send('Failed to read the temperature log file');
+    }
+
+    const lines = data.split('\n');
+    const last100Lines = lines.slice(-100); // Get the last 100 lines
+    res.setHeader('Content-Type', 'text/plain');
     res.send(last100Lines.join('\n'));
   });
 });
