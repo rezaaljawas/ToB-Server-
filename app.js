@@ -96,6 +96,42 @@ app.get('/latest-temperature-logs', (req, res) => {
   });
 });
 
+// Endpoint to receive sensor data
+app.post('/sensor', (req, res) => {
+  const { temperature_inside, temperature_outside, voltage, current, power, soc } = req.body;
+  if (temperature_inside === undefined || temperature_outside === undefined || voltage === undefined || current === undefined || power === undefined || soc === undefined) {
+    return res.status(400).send('Invalid request: missing sensor data');
+  }
+
+  const timestamp = getJakartaTimestamp();
+  const logEntry = `${timestamp} - Inside: ${temperature_inside}C, Outside: ${temperature_outside}C, Voltage: ${voltage}V, Current: ${current}A, Power: ${power}W, SoC: ${soc}%\n`;
+
+  fs.appendFile(sensorLogFilePath, logEntry, (err) => {
+    if (err) {
+      console.error('Error writing to sensor log file:', err);
+      return res.status(500).send('Failed to log the sensor data');
+    }
+
+    console.log('Sensor log entry added:', logEntry.trim());
+    res.send('Sensor data logged successfully!');
+  });
+});
+
+// Endpoint to get the latest 100 sensor logs
+app.get('/latest-sensor-logs', (req, res) => {
+  fs.readFile(sensorLogFilePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading sensor log file:', err);
+      return res.status(500).send('Failed to read the sensor log file');
+    }
+
+    const lines = data.split('\n');
+    const last100Lines = lines.slice(-100); // Get the last 100 lines
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(last100Lines.join('\n'));
+  });
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
