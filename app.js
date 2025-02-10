@@ -11,6 +11,7 @@ app.use(express.json());
 // Define the log file paths
 const logFilePath = path.join(__dirname, 'requests.log');
 const temperatureLogFilePath = path.join(__dirname, 'temperature.log');
+const sensorLogFilePath = path.join(__dirname, 'sensor.log');
 
 // Function to get Jakarta timestamp
 const getJakartaTimestamp = () => {
